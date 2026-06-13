@@ -61,6 +61,11 @@ async function render() {
   } catch {
     app.innerHTML = `<div class="container"><div class="error-state">Something went wrong. Please try again.</div></div>`;
   }
+
+  const existingFooter = document.querySelector('.site-footer');
+  if (!existingFooter) {
+    app.insertAdjacentHTML('beforeend', '<div class="site-footer">Created by Mohamed Rami Bouzid, with love and a prayer for peace for our community.</div>');
+  }
 }
 
 async function renderHome(app: HTMLElement) {
