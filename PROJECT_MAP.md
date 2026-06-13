@@ -15,7 +15,7 @@
 | **Frontend** | Vanilla HTML/CSS/JS (no framework) | Zero build overhead, max simplicity |
 | **Bundler** | Vite | Fast dev server, native ESM, trivial config |
 | **Data Store** | Local JSON files | No DB dependency; data is read-only Quran corpus |
-| **Deployment** | Render.com Static Site | Serves `/dist` directly, free tier, auto HTTPS |
+| **Deployment** | Render.com Web Service | Min Node.js server serves `dist/` + `/api/recommend-verse` proxy |
 | **Package Mgr** | npm | Standard, lockfile v3 |
 | **Lint** | ESLint + Prettier | Minimal config, catch type errors early |
 
@@ -104,12 +104,10 @@ Muslimfriend/
 │   │   └── quran.ts               # TypeScript interfaces
 │   ├── main.ts                    # App entry + router
 │   └── vite-env.d.ts
-├── public/
-│   └── favicon.ico
-├── package.json                   # deps: none (devDeps: vite, typescript, eslint)
+├── server.js                      # Node.js server: serves dist/ + /api/recommend-verse proxy
+├── package.json                   # deps: none (devDeps: vite, typescript)
 ├── tsconfig.json
 ├── vite.config.ts
-├── .eslintrc.cjs
 ├── .prettierrc
 ├── PROJECT_MAP.md                 # ← this file
 └── README.md
@@ -220,7 +218,7 @@ class ContentFilter {
 | `src/lib/getPage.ts` | ✅ Done | Fetch page data from pagesQuran.json |
 | `src/lib/search.ts` | ✅ Done | Bilingual search (ar/en), max 50 results |
 | `src/lib/safety.ts` | ✅ Done | Crisis keyword scan + international helpline banner |
-| `src/lib/openrouter.ts` | ✅ Done | OpenRouter API client for verse recommendations |
+| `src/lib/openrouter.ts` | ✅ Done | OpenRouter client → calls backend `/api/recommend-verse` proxy |
 | `src/components/surah-list.ts` | ✅ Done | Renders all 114 surahs with metadata |
 | `src/components/verse-card.ts` | ✅ Done | Renders single verse with ar/en, juz, page, sajda |
 | `src/components/feeling-button.ts` | ✅ Done | "How are you feeling?" CTA card |
@@ -229,6 +227,7 @@ class ContentFilter {
 | `src/main.ts` | ✅ Done | Hash router: home, surah, page, search, verse + feeling modal |
 | Feeling + OpenRouter | ✅ Done | User shares feeling → OpenRouter → verse lookup → display with safety scan |
 | Audio player | ✅ Done | 100+ reciters per surah, play/pause |
+| `server.js` | ✅ Done | Serves `dist/` static files + `/api/recommend-verse` proxy with env var key |
 | `npm run build` | ✅ Verified | 15 modules, 6236 verse files in dist/Data, 0 TS errors |
 
 ## [ORPHANS & PENDING]
@@ -267,21 +266,22 @@ class ContentFilter {
 - `audio-player` with dropdown of 100+ reciters and multiple riwayat
 - Play/pause per surah audio
 - Feeling button with OpenRouter AI verse recommendation
-- Modal UI with API key management (localStorage)
+- Backend proxy via `server.js` hides API key server-side
 - **Accept:** `npm run build` produces clean dist/ with no errors
 
 ### ⏳ M5 — Deploy (Pending User Action)
 - `npm run build` produces `/dist` — verified working
 - Need user to: create GitHub repo → push → connect to Render.com
-- Render config: Static Site, Build Command = `npm install && npm run build`, Publish = `dist`
+- Render config: **Web Service**, Build Command = `npm install && npm run build`, Start Command = `npm start`
+- **Environment variable:** `OPENROUTER_KEY` — set via Render dashboard
 
 ---
 
 ## DEPLOYMENT NOTES (Render.com)
 
-- **Type:** Static Site
+- **Type:** Web Service (not Static Site)
 - **Build Command:** `npm install && npm run build`
-- **Publish Directory:** `dist`
+- **Start Command:** `npm start`
 - **Node Version:** 20.x (set via `engines` in package.json)
-- **No server needed** — all data is client-fetched JSON
-- **CORS:** Vite dev server handles locally; production serves same-origin JSON from `/Data/` placed in `public/` or served via `viteStaticCopy`
+- **Environment Variable:** `OPENROUTER_KEY` — paste your OpenRouter key here in Render dashboard (Environment → Environment Variables)
+- **Architecture:** `server.js` serves `dist/` for all static files + handles `POST /api/recommend-verse` using the env var key; OpenRouter API key never reaches the client browser

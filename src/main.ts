@@ -106,27 +106,12 @@ async function openFeelingModal(_app: HTMLElement) {
         <button id="feeling-cancel" class="audio-btn" style="flex:1;background:var(--text-muted);">Cancel</button>
       </div>
       <div id="feeling-result" style="margin-top:0.75rem;"></div>
-      <div id="feeling-key-setup" style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);">
-        <details>
-          <summary style="font-size:0.6rem;color:var(--text-muted);cursor:pointer;">Set OpenRouter API Key</summary>
-          <input id="feeling-key-input" class="search-input" type="password" placeholder="Enter your OpenRouter API key" style="margin-top:0.5rem;font-size:0.7rem;">
-          <button id="feeling-key-save" class="audio-btn" style="margin-top:0.5rem;font-size:0.65rem;padding:0.4rem;">Save Key</button>
-        </details>
-      </div>
     </div>
   `;
   document.body.appendChild(modal);
 
   modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   document.getElementById('feeling-cancel')!.addEventListener('click', () => modal.remove());
-
-  const keyInput = document.getElementById('feeling-key-input') as HTMLInputElement;
-  const { getApiKey, setApiKey } = await import('./lib/openrouter.js');
-  if (getApiKey()) keyInput.value = getApiKey();
-  document.getElementById('feeling-key-save')!.addEventListener('click', () => {
-    setApiKey(keyInput.value.trim());
-    keyInput.value = '';
-  });
 
   document.getElementById('feeling-submit')!.addEventListener('click', async () => {
     const input = document.getElementById('feeling-input') as HTMLTextAreaElement;
@@ -140,12 +125,6 @@ async function openFeelingModal(_app: HTMLElement) {
     const { recommendVerse } = await import('./lib/openrouter.js');
     const { getVerse } = await import('./lib/getVerse.js');
     const { scanText } = await import('./lib/safety.js');
-
-    if (!getApiKey()) {
-      resultDiv.innerHTML = '<div class="error-state" style="font-size:0.65rem;">Please set your OpenRouter API key first.</div>';
-      (document.getElementById('feeling-submit') as HTMLButtonElement).disabled = false;
-      return;
-    }
 
     const recommendation = await recommendVerse(text);
     if (!recommendation) {
