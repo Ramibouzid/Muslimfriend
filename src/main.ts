@@ -278,13 +278,14 @@ async function renderPage(app: HTMLElement, pageNumber: number) {
 }
 
 async function renderSearch(app: HTMLElement, query: string) {
+  const decoded = query ? decodeURIComponent(query) : '';
   app.innerHTML = `
     <div class="header">
       <button class="back-btn" onclick="location.hash='#/'">←</button>
       <h1>${t('search')}</h1>
     </div>
     <div class="container">
-      <input class="search-input" id="search-input" type="text" placeholder="${t('search_placeholder')}" value="${escapeHtml(query)}">
+      <input class="search-input" id="search-input" type="text" placeholder="${t('search_placeholder')}" value="${escapeHtml(decoded)}">
       <div class="search-lang-toggle">
         <button class="search-lang-btn active" data-lang="en">${t('search_english')}</button>
         <button class="search-lang-btn" data-lang="ar">${t('search_arabic')}</button>
@@ -320,9 +321,9 @@ async function renderSearch(app: HTMLElement, query: string) {
     }, 300) as unknown as number;
   });
 
-  if (query) {
-    input.value = query;
-    doSearch(query, lang);
+  if (decoded) {
+    input.value = decoded;
+    doSearch(decoded, lang);
   }
 }
 
