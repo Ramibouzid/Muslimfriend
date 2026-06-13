@@ -1,7 +1,8 @@
 export interface VerseRecommendation {
   surah: number;
   verse: number;
-  reason: string;
+  english_advisory: string;
+  arabic_advisory: string;
 }
 
 export async function recommendVerse(feeling: string): Promise<VerseRecommendation | null> {

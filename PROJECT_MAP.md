@@ -223,12 +223,13 @@ class ContentFilter {
 | `src/components/verse-card.ts` | ✅ Done | Renders single verse with ar/en, juz, page, sajda |
 | `src/components/feeling-button.ts` | ✅ Done | "How are you feeling?" CTA card |
 | `src/components/audio-player.ts` | ✅ Done | Reciter dropdown + play/pause with 100+ reciters |
-| `src/styles/main.css` | ✅ Done | Cream bg, 22px font, mobile-first, high contrast |
-| `src/main.ts` | ✅ Done | Hash router: home, surah, page, search, verse + feeling modal |
-| Feeling + OpenRouter | ✅ Done | User shares feeling → OpenRouter → verse lookup → display with safety scan |
+| `src/styles/main.css` | ✅ Done | Apple-inspired redesign: #f5f5f7 canvas, #ffffff cards, #0071e3 CTA, 28px card radius, 999px buttons |
+| `src/main.ts` | ✅ Done | Hash router + home page with 3 sections: Ask a Question, Listen to the Quran, Browse Surahs |
+| Feeling → Question | ✅ Done | Replaced "How are you feeling?" modal with inline "Ask Any Question, Receive Guidance From the Quran" section; response in Arabic + English with warm friend-like advisory |
+| Audio player on home | ✅ Done | Separate "Listen to the Quran" section on home page with surah + reciter selector |
 | Audio player | ✅ Done | 100+ reciters per surah, play/pause |
-| `server.js` | ✅ Done | Serves `dist/` static files + `/api/recommend-verse` proxy with env var key |
-| `npm run build` | ✅ Verified | 15 modules, 6236 verse files in dist/Data, 0 TS errors |
+| `server.js` | ✅ Done | Updated system prompt for bilingual advisory response (english_advisory + arabic_advisory) |
+| `npm run build` | ✅ Verified | 16 modules, 6236 verse files in dist/Data, 0 TS errors |
 
 ## [ORPHANS & PENDING]
 
@@ -265,9 +266,16 @@ class ContentFilter {
 ### ✅ M4 — Audio + Polish (Complete)
 - `audio-player` with dropdown of 100+ reciters and multiple riwayat
 - Play/pause per surah audio
-- Feeling button with OpenRouter AI verse recommendation
 - Backend proxy via `server.js` hides API key server-side
 - **Accept:** `npm run build` produces clean dist/ with no errors
+
+### ✅ M6 — Apple Redesign + Question Section (Complete)
+- "Ask Any Question, Receive Guidance From the Quran" section replaces feeling modal
+- Response in Arabic + English with warm friend-like advisory text
+- Audio section on home page with surah picker + reciter selector
+- Apple-inspired design: #f5f5f7 fog canvas, #ffffff cards, 28px radius, 999px pill buttons, #0071e3 CTA
+- All old features preserved: surah list, verse card, search, audio, page viewer, safety
+- **Accept:** `npm run build + tsc --noEmit` = 0 errors
 
 ### ⏳ M5 — Deploy (Pending User Action)
 - `npm run build` produces `/dist` — verified working

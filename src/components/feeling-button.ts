@@ -1,8 +1,12 @@
-export default function renderFeelingButton(): string {
+export default function renderQuestionSection(): string {
   return `
-    <div class="card" style="text-align:center;background:linear-gradient(135deg,#2d6a4f,#40916c);color:#fff;cursor:pointer;" id="feeling-btn">
-      <div style="font-size:1rem;font-weight:600;">How are you feeling?</div>
-      <div style="font-size:0.65rem;margin-top:0.25rem;opacity:0.9;">Get a Quran verse that speaks to your heart</div>
+    <div class="question-section">
+      <h2 class="question-headline">Ask Any Question,<br>Receive Guidance From the Quran</h2>
+      <p class="question-subtitle">Share what's on your heart — a worry, a hope, a question — and receive a verse that speaks directly to you, with a personal note from a friend who truly cares.</p>
+      <textarea id="question-input" rows="4" placeholder="e.g., I'm feeling lost and need direction..." class="question-input"></textarea>
+      <button id="question-submit" class="question-submit-btn">Find Guidance</button>
+      <div id="question-result" class="question-result"></div>
+      <div id="question-loader" class="question-loader" style="display:none;"><div class="loader-spinner"></div><span>Seeking wisdom for you...</span></div>
     </div>
   `;
 }

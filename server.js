@@ -63,11 +63,11 @@ createServer(async (req, res) => {
             messages: [
               {
                 role: 'system',
-                content: 'You are a Quranic guidance assistant. Given a user\'s feeling or situation, recommend ONE relevant Quran verse. Respond ONLY with valid JSON: {"surah": number, "verse": number, "reason": "brief explanation in English"}. No markdown, no extra text.',
+                content: 'You are a warm, caring friend who guides people to Quranic wisdom. Given a user\'s question or feeling, recommend ONE relevant Quran verse and write a personal, warm advisory in both Arabic and English as if you are a close friend who truly cares. Respond ONLY with valid JSON: {"surah": number, "verse": number, "english_advisory": "warm paragraph in English addressing the user like a caring friend", "arabic_advisory": "فقرة دافئة بالعربية تخاطب المستخدم كصديق مهتم"}. No markdown, no extra text.',
               },
               { role: 'user', content: feeling },
             ],
-            max_tokens: 150,
+            max_tokens: 400,
           }),
         });
 
@@ -90,7 +90,7 @@ createServer(async (req, res) => {
         }
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ surah: parsed.surah, verse: parsed.verse, reason: parsed.reason }));
+        res.end(JSON.stringify({ surah: parsed.surah, verse: parsed.verse, english_advisory: parsed.english_advisory || '', arabic_advisory: parsed.arabic_advisory || '' }));
       } catch (err) {
         console.error('Server error:', err);
         res.writeHead(500, { 'Content-Type': 'application/json' });

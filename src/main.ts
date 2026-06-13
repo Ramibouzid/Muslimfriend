@@ -66,93 +66,124 @@ async function render() {
 async function renderHome(app: HTMLElement) {
   const { getAllSurahMeta } = await import('./lib/getSurah.js');
   const { default: renderSurahList } = await import('./components/surah-list.js');
-  const { default: renderFeelingButton } = await import('./components/feeling-button.js');
+  const { default: renderQuestionSection } = await import('./components/feeling-button.js');
 
   const surahs = await getAllSurahMeta();
   app.innerHTML = `
     <div class="header">
       <h1>MuslimFriend</h1>
-      <a href="#/search">🔍</a>
+      <div class="header-links">
+        <a href="#/search" class="header-link">Search</a>
+      </div>
+    </div>
+    <div class="home-hero">
+      <div class="home-hero-content">
+        <h2 class="home-hero-title">Find peace in the Quran</h2>
+        <p class="home-hero-subtitle">Your companion for reflection, guidance, and listening</p>
+      </div>
     </div>
     <div class="container">
-      ${renderFeelingButton()}
+      ${renderQuestionSection()}
+      <div class="home-section-divider"></div>
+      <div class="audio-section">
+        <h3 class="section-heading">Listen to the Quran</h3>
+        <p class="section-subtitle">Choose a surah and a reciter to begin</p>
+        <div id="home-audio-panel">
+          <select id="home-surah-select" class="home-surah-select">
+            ${surahs.map(s => `<option value="${s.number}">${s.number}. ${s.name.transliteration}</option>`).join('')}
+          </select>
+          <div id="home-reciter-area"></div>
+        </div>
+      </div>
+      <div class="home-section-divider"></div>
+      <h3 class="section-heading">Browse the Quran</h3>
+      <p class="section-subtitle">All 114 surahs</p>
       ${renderSurahList(surahs)}
     </div>
   `;
 
-  const feelingBtn = document.getElementById('feeling-btn');
-  if (feelingBtn) {
-    feelingBtn.addEventListener('click', () => openFeelingModal(app));
-  }
+  document.getElementById('question-submit')!.addEventListener('click', handleQuestionSubmit);
+  document.getElementById('question-input')!.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleQuestionSubmit();
+    }
+  });
+
+  initHomeAudio();
 }
 
-async function openFeelingModal(_app: HTMLElement) {
-  const existing = document.getElementById('feeling-modal');
-  if (existing) existing.remove();
+async function handleQuestionSubmit() {
+  const input = document.getElementById('question-input') as HTMLTextAreaElement;
+  const text = input.value.trim();
+  if (!text) return;
 
-  const modal = document.createElement('div');
-  modal.id = 'feeling-modal';
-  modal.style.cssText = `
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
-    display: flex; align-items: center; justify-content: center; padding: 1rem;
-  `;
-  modal.innerHTML = `
-    <div class="card" style="max-width:450px;width:100%;">
-      <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;">How are you feeling?</div>
-      <p style="font-size:0.65rem;color:var(--text-muted);margin-bottom:0.75rem;">Share your feeling and get a verse that resonates with you.</p>
-      <textarea id="feeling-input" rows="3" class="search-input" placeholder="e.g., I feel anxious about my future..." style="resize:vertical;font-family:inherit;"></textarea>
-      <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
-        <button id="feeling-submit" class="audio-btn" style="flex:1;">Find a Verse</button>
-        <button id="feeling-cancel" class="audio-btn" style="flex:1;background:var(--text-muted);">Cancel</button>
-      </div>
-      <div id="feeling-result" style="margin-top:0.75rem;"></div>
+  const loader = document.getElementById('question-loader')!;
+  const resultDiv = document.getElementById('question-result')!;
+  const submitBtn = document.getElementById('question-submit') as HTMLButtonElement;
+
+  submitBtn.disabled = true;
+  resultDiv.innerHTML = '';
+  loader.style.display = 'flex';
+
+  const { recommendVerse } = await import('./lib/openrouter.js');
+  const { getVerse } = await import('./lib/getVerse.js');
+  const { scanText } = await import('./lib/safety.js');
+
+  const recommendation = await recommendVerse(text);
+  loader.style.display = 'none';
+
+  if (!recommendation) {
+    resultDiv.innerHTML = '<div class="question-error">Could not find guidance right now. Please try again.</div>';
+    submitBtn.disabled = false;
+    return;
+  }
+
+  const verse = await getVerse(recommendation.surah, recommendation.verse);
+  if (!verse) {
+    resultDiv.innerHTML = '<div class="question-error">Verse data not found.</div>';
+    submitBtn.disabled = false;
+    return;
+  }
+
+  const safety = scanText(verse.text.en + ' ' + verse.text.ar);
+  resultDiv.innerHTML = `
+    ${safety.message ? `<div class="safety-banner">${safety.message}</div>` : ''}
+    <div class="question-response">
+      <div class="response-advisory response-advisory-ar" dir="rtl">${recommendation.arabic_advisory || ''}</div>
+      <div class="response-verse-ar">${verse.text.ar}</div>
+      <div class="response-advisory">${recommendation.english_advisory || ''}</div>
+      <div class="response-verse-en">${verse.text.en}</div>
+      <a href="#/verse/${recommendation.surah}/${recommendation.verse}" class="response-link">Read full context →</a>
     </div>
   `;
-  document.body.appendChild(modal);
+  submitBtn.disabled = false;
+  resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
-  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-  document.getElementById('feeling-cancel')!.addEventListener('click', () => modal.remove());
+function initHomeAudio() {
+  const select = document.getElementById('home-surah-select') as HTMLSelectElement;
+  const reciterArea = document.getElementById('home-reciter-area')!;
 
-  document.getElementById('feeling-submit')!.addEventListener('click', async () => {
-    const input = document.getElementById('feeling-input') as HTMLTextAreaElement;
-    const text = input.value.trim();
-    if (!text) return;
-
-    const resultDiv = document.getElementById('feeling-result')!;
-    resultDiv.innerHTML = '<div class="loading" style="padding:1rem;">Finding a verse for you...</div>';
-    (document.getElementById('feeling-submit') as HTMLButtonElement).disabled = true;
-
-    const { recommendVerse } = await import('./lib/openrouter.js');
-    const { getVerse } = await import('./lib/getVerse.js');
-    const { scanText } = await import('./lib/safety.js');
-
-    const recommendation = await recommendVerse(text);
-    if (!recommendation) {
-      resultDiv.innerHTML = '<div class="error-state" style="font-size:0.65rem;">Could not find a verse. Check your API key or try again.</div>';
-      (document.getElementById('feeling-submit') as HTMLButtonElement).disabled = false;
-      return;
+  select.addEventListener('change', async () => {
+    const surahNumber = parseInt(select.value);
+    try {
+      const res = await fetch('/Data/mainDataQuran.json');
+      const data = await res.json() as { number: number; audio: import('./types/quran.js').AudioReciter[] }[];
+      const surah = data.find(s => s.number === surahNumber);
+      if (!surah || !surah.audio) {
+        reciterArea.innerHTML = '<p class="no-audio">No audio available for this surah</p>';
+        return;
+      }
+      const { default: renderAudioPanel, initAudioPlayer } = await import('./components/audio-player.js');
+      reciterArea.innerHTML = renderAudioPanel(surah.audio);
+      initAudioPlayer(surahNumber);
+    } catch {
+      reciterArea.innerHTML = '<p class="no-audio">Failed to load audio data</p>';
     }
-
-    const verse = await getVerse(recommendation.surah, recommendation.verse);
-    if (!verse) {
-      resultDiv.innerHTML = '<div class="error-state" style="font-size:0.65rem;">Verse data not found.</div>';
-      (document.getElementById('feeling-submit') as HTMLButtonElement).disabled = false;
-      return;
-    }
-
-    const safety = scanText(verse.text.en + ' ' + verse.text.ar);
-    resultDiv.innerHTML = `
-      ${safety.message ? `<div class="safety-banner" style="font-size:0.65rem;border-radius:8px;margin-bottom:0.5rem;">${safety.message}</div>` : ''}
-      <div class="verse-text-ar" style="font-size:1.2rem;">${verse.text.ar}</div>
-      <div class="verse-text-en" style="font-size:0.65rem;">${verse.text.en}</div>
-      <div style="font-size:0.6rem;color:var(--text-muted);margin-top:0.5rem;">
-        ${recommendation.reason}
-        <br><a href="#/verse/${recommendation.surah}/${recommendation.verse}" style="color:var(--primary);">Go to verse →</a>
-      </div>
-    `;
-    modal.querySelector('.card')!.scrollTop = 0;
-    (document.getElementById('feeling-submit') as HTMLButtonElement).disabled = false;
   });
+
+  select.dispatchEvent(new Event('change'));
 }
 
 async function renderSurah(app: HTMLElement, surahNumber: number, highlightVerse: number) {
