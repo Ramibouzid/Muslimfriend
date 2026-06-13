@@ -230,6 +230,10 @@ class ContentFilter {
 | Audio player | ✅ Done | 100+ reciters per surah, play/pause |
 | `server.js` | ✅ Done | Updated system prompt for bilingual advisory response (english_advisory + arabic_advisory) |
 | `npm run build` | ✅ Verified | 16 modules, 6236 verse files in dist/Data, 0 TS errors |
+| `src/lib/i18n.ts` | ✅ Done | Full i18n system with 40+ translation keys, ar/en switching, localStorage persistence |
+| `src/components/language-toggle.ts` | ✅ Done | Top-left toggle button, dispatches `languagechange` event to re-render |
+| Arabic default + RTL | ✅ Done | `index.html` `lang="ar" dir="rtl"`, CSS RTL overrides for headings, inputs, lists |
+| Description text | ✅ Done | "منصة ذكية تجمع بين القرآن الكريم..." on home page in both languages |
 
 ## [ORPHANS & PENDING]
 

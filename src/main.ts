@@ -1,4 +1,6 @@
 import './styles/main.css';
+import { t, initLang } from './lib/i18n.js';
+import { initLangToggle } from './components/language-toggle.js';
 
 type Page = 'home' | 'surah' | 'page' | 'search' | 'verse';
 
@@ -31,7 +33,9 @@ function navigate(hash: string) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  initLang();
   window.addEventListener('hashchange', render);
+  window.addEventListener('languagechange', render);
   render();
 });
 
@@ -59,12 +63,12 @@ async function render() {
         break;
     }
   } catch {
-    app.innerHTML = `<div class="container"><div class="error-state">Something went wrong. Please try again.</div></div>`;
+    app.innerHTML = `<div class="container"><div class="error-state">${t('error_generic')}</div></div>`;
   }
 
   const existingFooter = document.querySelector('.site-footer');
   if (!existingFooter) {
-    app.insertAdjacentHTML('beforeend', '<div class="site-footer">Created by Mohamed Rami Bouzid, with love and a prayer for peace for our community.</div>');
+    app.insertAdjacentHTML('beforeend', `<div class="site-footer">${t('footer')}</div>`);
   }
 }
 
@@ -72,27 +76,30 @@ async function renderHome(app: HTMLElement) {
   const { getAllSurahMeta } = await import('./lib/getSurah.js');
   const { default: renderSurahList } = await import('./components/surah-list.js');
   const { default: renderQuestionSection } = await import('./components/feeling-button.js');
+  const { default: renderLangToggle } = await import('./components/language-toggle.js');
 
   const surahs = await getAllSurahMeta();
   app.innerHTML = `
     <div class="header">
+      ${renderLangToggle()}
       <h1>MuslimFriend</h1>
       <div class="header-links">
-        <a href="#/search" class="header-link">Search</a>
+        <a href="#/search" class="header-link">${t('search')}</a>
       </div>
     </div>
     <div class="home-hero">
       <div class="home-hero-content">
-        <h2 class="home-hero-title">Find peace in the Quran</h2>
-        <p class="home-hero-subtitle">Your companion for reflection, guidance, and listening</p>
+        <h2 class="home-hero-title">${t('home_hero_title')}</h2>
+        <p class="home-hero-subtitle">${t('home_hero_subtitle')}</p>
       </div>
     </div>
     <div class="container">
+      <p class="about-desc">${t('about_desc')}</p>
       ${renderQuestionSection()}
       <div class="home-section-divider"></div>
       <div class="audio-section">
-        <h3 class="section-heading">Listen to the Quran</h3>
-        <p class="section-subtitle">Choose a surah and a reciter to begin</p>
+        <h3 class="section-heading">${t('listen_section')}</h3>
+        <p class="section-subtitle">${t('listen_subtitle')}</p>
         <div id="home-audio-panel">
           <select id="home-surah-select" class="home-surah-select">
             ${surahs.map(s => `<option value="${s.number}">${s.number}. ${s.name.transliteration}</option>`).join('')}
@@ -101,11 +108,13 @@ async function renderHome(app: HTMLElement) {
         </div>
       </div>
       <div class="home-section-divider"></div>
-      <h3 class="section-heading">Browse the Quran</h3>
-      <p class="section-subtitle">All 114 surahs</p>
+      <h3 class="section-heading">${t('browse_quran')}</h3>
+      <p class="section-subtitle">${t('all_surahs')}</p>
       ${renderSurahList(surahs)}
     </div>
   `;
+
+  initLangToggle();
 
   document.getElementById('question-submit')!.addEventListener('click', handleQuestionSubmit);
   document.getElementById('question-input')!.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -134,32 +143,34 @@ async function handleQuestionSubmit() {
   const { recommendVerse } = await import('./lib/openrouter.js');
   const { getVerse } = await import('./lib/getVerse.js');
   const { scanText } = await import('./lib/safety.js');
+  const { getLang } = await import('./lib/i18n.js');
 
   const recommendation = await recommendVerse(text);
   loader.style.display = 'none';
 
   if (!recommendation) {
-    resultDiv.innerHTML = '<div class="question-error">Could not find guidance right now. Please try again.</div>';
+    resultDiv.innerHTML = `<div class="question-error">${t('guidance_error')}</div>`;
     submitBtn.disabled = false;
     return;
   }
 
   const verse = await getVerse(recommendation.surah, recommendation.verse);
   if (!verse) {
-    resultDiv.innerHTML = '<div class="question-error">Verse data not found.</div>';
+    resultDiv.innerHTML = `<div class="question-error">${t('verse_data_fail')}</div>`;
     submitBtn.disabled = false;
     return;
   }
 
+  const lang = getLang();
   const safety = scanText(verse.text.en + ' ' + verse.text.ar);
   resultDiv.innerHTML = `
     ${safety.message ? `<div class="safety-banner">${safety.message}</div>` : ''}
     <div class="question-response">
-      <div class="response-advisory response-advisory-ar" dir="rtl">${recommendation.arabic_advisory || ''}</div>
+      <div class="response-advisory response-advisory-ar" dir="rtl">${lang === 'ar' ? (recommendation.arabic_advisory || '') : ''}</div>
       <div class="response-verse-ar">${verse.text.ar}</div>
-      <div class="response-advisory">${recommendation.english_advisory || ''}</div>
+      <div class="response-advisory">${lang === 'en' ? (recommendation.english_advisory || '') : ''}</div>
       <div class="response-verse-en">${verse.text.en}</div>
-      <a href="#/verse/${recommendation.surah}/${recommendation.verse}" class="response-link">Read full context →</a>
+      <a href="#/verse/${recommendation.surah}/${recommendation.verse}" class="response-link">${t('read_context')}</a>
     </div>
   `;
   submitBtn.disabled = false;
@@ -177,14 +188,14 @@ function initHomeAudio() {
       const data = await res.json() as { number: number; audio: import('./types/quran.js').AudioReciter[] }[];
       const surah = data.find(s => s.number === surahNumber);
       if (!surah || !surah.audio) {
-        reciterArea.innerHTML = '<p class="no-audio">No audio available for this surah</p>';
+        reciterArea.innerHTML = `<p class="no-audio">${t('no_audio')}</p>`;
         return;
       }
       const { default: renderAudioPanel, initAudioPlayer } = await import('./components/audio-player.js');
       reciterArea.innerHTML = renderAudioPanel(surah.audio);
       initAudioPlayer(surahNumber);
     } catch {
-      reciterArea.innerHTML = '<p class="no-audio">Failed to load audio data</p>';
+      reciterArea.innerHTML = `<p class="no-audio">${t('audio_load_fail')}</p>`;
     }
   });
 
@@ -198,7 +209,7 @@ async function renderSurah(app: HTMLElement, surahNumber: number, highlightVerse
 
   const meta = await getSurahMeta(surahNumber);
   if (!meta) {
-    app.innerHTML = `<div class="container"><div class="error-state">Surah not found</div></div>`;
+    app.innerHTML = `<div class="container"><div class="error-state">${t('surah_not_found')}</div></div>`;
     return;
   }
 
@@ -208,7 +219,7 @@ async function renderSurah(app: HTMLElement, surahNumber: number, highlightVerse
     const surah = data.find(s => s.number === surahNumber);
 
     if (!surah) {
-      app.innerHTML = `<div class="container"><div class="error-state">Surah data not found</div></div>`;
+      app.innerHTML = `<div class="container"><div class="error-state">${t('surah_data_fail')}</div></div>`;
       return;
     }
 
@@ -216,7 +227,7 @@ async function renderSurah(app: HTMLElement, surahNumber: number, highlightVerse
       <div class="header">
         <button class="back-btn" onclick="location.hash='#/'">←</button>
         <h1>${meta.name.transliteration}</h1>
-        <a href="#/search">🔍</a>
+        <a href="#/search" class="header-link">${t('search')}</a>
       </div>
       <div class="container">
         <div class="surah-name">${meta.name.ar} — ${meta.name.en}</div>
@@ -235,7 +246,7 @@ async function renderSurah(app: HTMLElement, surahNumber: number, highlightVerse
       }, 100);
     }
   } catch {
-    app.innerHTML = `<div class="container"><div class="error-state">Failed to load surah data</div></div>`;
+    app.innerHTML = `<div class="container"><div class="error-state">${t('surah_data_fail')}</div></div>`;
   }
 }
 
@@ -244,23 +255,23 @@ async function renderPage(app: HTMLElement, pageNumber: number) {
   const page = await getPage(pageNumber);
 
   if (!page) {
-    app.innerHTML = `<div class="container"><div class="error-state">Page not found</div></div>`;
+    app.innerHTML = `<div class="container"><div class="error-state">${t('page_not_found')}</div></div>`;
     return;
   }
 
   app.innerHTML = `
     <div class="header">
       <button class="back-btn" onclick="location.hash='#/'">←</button>
-      <h1>Page ${pageNumber}</h1>
+      <h1>${t('page')} ${pageNumber}</h1>
     </div>
     <div class="container">
       <div class="page-viewer">
-        <img src="${page.image.url}" alt="Page ${pageNumber}" onerror="this.alt='Page image not available'" loading="lazy">
+        <img src="${page.image.url}" alt="${t('page')} ${pageNumber}" onerror="this.alt='${t('page')} not available'" loading="lazy">
       </div>
       <div class="page-nav">
-        <button ${pageNumber <= 1 ? 'disabled' : ''} onclick="location.hash='#/page/${pageNumber - 1}'">← Previous</button>
+        <button ${pageNumber <= 1 ? 'disabled' : ''} onclick="location.hash='#/page/${pageNumber - 1}'">${t('previous')}</button>
         <span>${page.start.name.transliteration} ${page.start.verse}:${page.start.surah_number} — ${page.end.verse}:${page.end.surah_number}</span>
-        <button ${pageNumber >= 604 ? 'disabled' : ''} onclick="location.hash='#/page/${pageNumber + 1}'">Next →</button>
+        <button ${pageNumber >= 604 ? 'disabled' : ''} onclick="location.hash='#/page/${pageNumber + 1}'">${t('next')}</button>
       </div>
     </div>
   `;
@@ -270,13 +281,13 @@ async function renderSearch(app: HTMLElement, query: string) {
   app.innerHTML = `
     <div class="header">
       <button class="back-btn" onclick="location.hash='#/'">←</button>
-      <h1>Search</h1>
+      <h1>${t('search')}</h1>
     </div>
     <div class="container">
-      <input class="search-input" id="search-input" type="text" placeholder="Search verses..." value="${escapeHtml(query)}">
+      <input class="search-input" id="search-input" type="text" placeholder="${t('search_placeholder')}" value="${escapeHtml(query)}">
       <div class="search-lang-toggle">
-        <button class="search-lang-btn active" data-lang="en">English</button>
-        <button class="search-lang-btn" data-lang="ar">العربية</button>
+        <button class="search-lang-btn active" data-lang="en">${t('search_english')}</button>
+        <button class="search-lang-btn" data-lang="ar">${t('search_arabic')}</button>
       </div>
       <div id="search-results"></div>
     </div>
@@ -318,11 +329,11 @@ async function renderSearch(app: HTMLElement, query: string) {
 async function doSearch(term: string, lang: 'ar' | 'en') {
   const { searchVerses } = await import('./lib/search.js');
   const resultsDiv = document.getElementById('search-results')!;
-  resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
+  resultsDiv.innerHTML = `<div class="loading">${t('searching')}</div>`;
 
   const results = await searchVerses(term, lang);
   if (results.length === 0) {
-    resultsDiv.innerHTML = '<div class="error-state">No results found</div>';
+    resultsDiv.innerHTML = `<div class="error-state">${t('no_results')}</div>`;
     return;
   }
 
@@ -344,7 +355,7 @@ async function renderVerse(app: HTMLElement, surah: number, verse: number) {
   const [meta, v] = await Promise.all([getSurahMeta(surah), getVerse(surah, verse)]);
 
   if (!v || !meta) {
-    app.innerHTML = `<div class="container"><div class="error-state">Verse not found</div></div>`;
+    app.innerHTML = `<div class="container"><div class="error-state">${t('verse_data_fail')}</div></div>`;
     return;
   }
 

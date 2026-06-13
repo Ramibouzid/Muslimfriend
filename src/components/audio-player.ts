@@ -1,4 +1,5 @@
 import type { AudioReciter } from '../types/quran.js';
+import { t } from '../lib/i18n.js';
 
 export default function renderAudioPanel(reciters: AudioReciter[]): string {
   return `
@@ -6,7 +7,7 @@ export default function renderAudioPanel(reciters: AudioReciter[]): string {
       <select id="reciter-select">
         ${reciters.map(r => `<option value="${r.id}" data-link="${r.link}">${r.reciter.en} — ${r.rewaya.en}</option>`).join('')}
       </select>
-      <button class="audio-btn" id="play-btn">▶ Play Surah Audio</button>
+      <button class="audio-btn" id="play-btn">▶ ${t('play_audio')}</button>
       <audio id="audio-player" style="display:none;"></audio>
     </div>
   `;
@@ -20,6 +21,8 @@ export function initAudioPlayer(surahNumber: number) {
   if (!select || !playBtn || !audio) return;
 
   const pad = String(surahNumber).padStart(3, '0');
+  const playLabel = t('play_audio');
+  const pauseLabel = t('pause');
 
   playBtn.addEventListener('click', () => {
     const selectedOption = select.options[select.selectedIndex];
@@ -28,13 +31,13 @@ export function initAudioPlayer(surahNumber: number) {
 
     if (audio.src === link && !audio.paused) {
       audio.pause();
-      playBtn.textContent = '▶ Play Surah Audio';
+      playBtn.textContent = `▶ ${playLabel}`;
       return;
     }
 
     audio.src = link;
     audio.play();
-    playBtn.textContent = '⏸ Pause';
-    audio.onended = () => { playBtn.textContent = '▶ Play Surah Audio'; };
+    playBtn.textContent = `⏸ ${pauseLabel}`;
+    audio.onended = () => { playBtn.textContent = `▶ ${playLabel}`; };
   });
 }

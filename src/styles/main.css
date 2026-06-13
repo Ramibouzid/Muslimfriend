@@ -50,6 +50,21 @@ body {
 
 .header-links { display: flex; align-items: center; gap: 1.5rem; }
 
+.lang-toggle {
+  background: none;
+  border: 1px solid var(--color-silver-mist);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--color-cobalt-link);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.lang-toggle:hover { background: var(--color-fog); }
+
 .header-link {
   color: var(--color-cobalt-link);
   text-decoration: none;
@@ -523,6 +538,21 @@ body {
   max-width: 980px;
   margin: 0 auto;
 }
+
+.about-desc {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-graphite);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+}
+
+[dir="rtl"] .home-hero-title { letter-spacing: 0; }
+[dir="rtl"] .question-headline { letter-spacing: 0; }
+[dir="rtl"] .section-heading { letter-spacing: 0; }
+[dir="rtl"] .question-input { text-align: right; }
+[dir="rtl"] .surah-list-item { flex-direction: row; }
 
 @media (max-width: 480px) {
   .container { padding: 0 1rem 2rem; }
